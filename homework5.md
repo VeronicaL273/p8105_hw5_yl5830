@@ -15,7 +15,7 @@ bday_simulation = function(group_size){
 }
 ```
 
-Initialize the group_size
+Initialize the group_size and number of simulations.
 
 ``` r
 group_sizes <- 2:50
@@ -25,13 +25,33 @@ probabilities <- numeric(length(group_sizes))
 
 Run simulation.  
 Perform simulations for the current group size using map_lgl.
-mean(results) calculates the probability of at least one shared
-birthday.  
+mean(results) calculates the probability of at least one shared birthday
+for group_size = i.  
 
 ``` r
-for (i in length(group_sizes)) {
+for (i in 1:length(group_sizes)) {
   group_size = group_sizes[i]
   results = map_lgl(1:n_simulations, ~bday_simulation(group_size))
   probabilities[i] = mean(results)
 }
+output_df = tibble(
+  group_size = group_sizes,
+  probability = probabilities
+  )
 ```
+
+Plot the probabilities.
+
+``` r
+ggplot(output_df, aes(x = group_size, y = probability)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Probability of Shared Birthday vs. Group Size",
+    x = "Group Size",
+    y = "Probability of Duplicate Birthdays"
+  ) +
+  theme_minimal()
+```
+
+![](homework5_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
