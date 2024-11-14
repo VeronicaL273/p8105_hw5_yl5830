@@ -54,9 +54,10 @@ ggplot(output_df, aes(x = group_size, y = probability)) +
   theme_minimal()
 ```
 
-![](homework5_files/figure-gfm/unnamed-chunk-4-1.png)<!-- --> The plot
-showcases the counterintuitive nature of the problem: even with a
-seemingly small group (23 people), there is a high chance of at least
+![](homework5_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+The plot showcases the counterintuitive nature of the problem: even with
+a seemingly small group (23 people), there is a high chance of at least
 one shared birthday. The curve’s steep growth between group sizes 10 and
 30 highlights how quickly the probability increases in that range.
 
@@ -70,7 +71,8 @@ mu_values = 0:6
 n_simulations <- 5000
 ```
 
-Function for every mu values:  
+#### Function for every mu values: 
+
 Generate data from normal distribution N(mu, sigma) and perform a
 one-sample t-test using alpha=0.05. After that, we use broom::tidy()
 function to extract estimate and p-value.
@@ -95,7 +97,7 @@ simulate_t_test <- function(n, mu, sigma, alpha) {
 }
 ```
 
-Do iteration for t-test simulation.
+#### Do iteration for t-test simulation.
 
 ``` r
 sim_results_df = 
@@ -110,9 +112,8 @@ sim_results_df =
   unnest(estimate_df)
 ```
 
-Calculate the power (proportion of times the null was rejected), average
-estimate for all simulations (be it null rejected or not) and average
-estimate when null is rejected.  
+#### Calculate the power (proportion of times the null was rejected), average estimate for all simulations (be it null rejected or not) and average estimate when null is rejected. 
+
 Since “reject_null” is a logical vector (TRUE if null was rejected) and
 mean() of a logical vector in R treats TRUE as 1 and FALSE as 0,
 mean(reject_null) gives the proportion of simulations where the null
@@ -130,11 +131,7 @@ summary_results = sim_results_df |>
   )
 ```
 
-Plot: Power vs True Value of Mu  
-\#### For small effect sizes (e.g., mu = 0), power is close to zero,
-indicating the test has low ability to detect small effects. As mu
-increases, power approaches 1, showing that the test is more likely to
-reject the null hypothesis when the true effect is larger.
+#### Plot: Power vs True Value of Mu 
 
 ``` r
 ggplot(summary_results, aes(x = mu, y = power)) +
@@ -150,12 +147,12 @@ ggplot(summary_results, aes(x = mu, y = power)) +
 
 ![](homework5_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
-Plot: Average Estimate vs True Value of Mu  
-\#### The average estimate of mu-hat across all samples is approximately
-equal to the true value of mu. This shows the test is unbiased on
-average. The average mu_hat for rejected nulls is slightly larger than
-the true value of mu. This occurs because rejecting the null requires
-u_hat to be sufficiently far from 0, introducing selection bias.
+For small effect sizes (e.g., mu = 0), power is close to zero,
+indicating the test has low ability to detect small effects. As mu
+increases, power approaches 1, showing that the test is more likely to
+reject the null hypothesis when the true effect is larger.
+
+#### Plot: Average Estimate vs True Value of Mu 
 
 ``` r
 ggplot(summary_results, aes(x = mu)) +
@@ -175,12 +172,19 @@ ggplot(summary_results, aes(x = mu)) +
 
 ![](homework5_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-Answer to the question:   Across all samples, the sample average of
-mu_hat is approximately equal to the true mu, confirming that the
-estimator is unbiased. However, for samples where the null is rejected,
-the average mu_hat is not equal to the true mu. This is due to
-conditional bias: only samples with extreme values of mu_hat lead to
-rejection of the null hypothesis.
+The average estimate of mu-hat across all samples is approximately equal
+to the true value of mu. This shows the test is unbiased on average. The
+average mu_hat for rejected nulls is slightly larger than the true value
+of mu. This occurs because rejecting the null requires u_hat to be
+sufficiently far from 0, introducing selection bias.
+
+#### Answer to the question: 
+
+Across all samples, the sample average of mu_hat is approximately equal
+to the true mu, confirming that the estimator is unbiased. However, for
+samples where the null is rejected, the average mu_hat is not equal to
+the true mu. This is due to conditional bias: only samples with extreme
+values of mu_hat lead to rejection of the null hypothesis.
 
 ## Problem 3
 
@@ -199,7 +203,7 @@ homicide_data = read_csv("./data/homicide-data.csv")
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
-3.1 Describe the raw data.
+#### 3.1 Describe the raw data.
 
 ``` r
 cat("Number of rows:", nrow(homicide_data), "\n")
@@ -232,7 +236,7 @@ glimpse(homicide_data)
     ## $ lon           <dbl> -106.5386, -106.7153, -106.6956, -106.5561, -106.5810, -…
     ## $ disposition   <chr> "Closed without arrest", "Closed by arrest", "Closed wit…
 
-3.2 Create city_state and summarize data by this new variable.
+#### 3.2 Create city_state and summarize data by this new variable.
 
 ``` r
 homicide_data = homicide_data |>
@@ -264,8 +268,7 @@ print(city_state_summary)
     ## 10 Cincinnati, OH              694                309
     ## # ℹ 41 more rows
 
-3.2 Filter data for Baltimore, MD and perform proportion test for
-Baltimore
+#### 3.3 Filter data for Baltimore, MD and perform proportion test for Baltimore
 
 ``` r
 baltimore_data = 
@@ -291,7 +294,7 @@ cat("For the city of Baltimore, MD, the proportion of homicides that are unsolve
     ## For the city of Baltimore, MD, the proportion of homicides that are unsolved, 
     ##     is estimated to be  0.6455607 with confidence interval ( 0.6275625 , 0.6631599 )
 
-3.3 Perform proportion tests for all cities
+#### 3.4 Perform proportion tests for all cities
 
 ``` r
 city_state_results = 
@@ -323,6 +326,23 @@ city_state_results
     ## 10 Cincinnati, OH             694                309    0.445    0.408     0.483
     ## # ℹ 41 more rows
 
-3.4 Sort data by proportion of unsolved homicides and plot proportions
-with confidence intervals
+#### 3.5 Sort data by proportion of unsolved homicides and plot proportions with confidence intervals
+
+``` r
+city_state_results =
+  city_state_results |>
+  arrange(desc(estimate))
+
+ggplot(city_state_results, aes(x = reorder(city_state, estimate), y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.3) +
+  coord_flip() +
+  labs(
+    title = "Proportion of Unsolved Homicides by City-State",
+    x = "City-State",
+    y = "Proportion of Unsolved Homicides"
+  ) +
+  theme_minimal() 
+```
+
 ![](homework5_files/figure-gfm/fig-1.png)<!-- -->
