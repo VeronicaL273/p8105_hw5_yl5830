@@ -120,7 +120,7 @@ summary_results = sim_results_df |>
 ```
 
 
-Plot: Power vs True Value of Mu
+Plot: Power vs True Value of Mu \
 #### For small effect sizes (e.g., mu = 0), power is close to zero, indicating the test has low ability to detect small effects. As mu increases, power approaches 1, showing that the test is more likely to reject the null hypothesis when the true effect is larger.
 ```{r}
 ggplot(summary_results, aes(x = mu, y = power)) +
@@ -134,7 +134,7 @@ ggplot(summary_results, aes(x = mu, y = power)) +
   theme_minimal()
 ```
 
-Plot: Average Estimate vs True Value of Mu
+Plot: Average Estimate vs True Value of Mu \
 #### The average estimate of mu-hat across all samples is approximately equal to the true value of mu. This shows the test is unbiased on average. The average mu_hat for rejected nulls is slightly larger than the true value of mu. This occurs because rejecting the null requires u_hat to be sufficiently far from 0, introducing selection bias.
 ```{r}
 ggplot(summary_results, aes(x = mu)) +
@@ -153,5 +153,96 @@ ggplot(summary_results, aes(x = mu)) +
 
 ```
 
-Answer to the question:
+Answer to the question: \ 
 Across all samples, the sample average of mu_hat is approximately equal to the true mu, confirming that the estimator is unbiased. However, for samples where the null is rejected, the average mu_hat is not equal to the true mu. This is due to conditional bias: only samples with extreme values of mu_hat lead to rejection of the null hypothesis.
+
+
+## Problem 3
+Load the dataset.
+```{r}
+homicide_data = read_csv("./data/homicide-data.csv")
+```
+
+3.1 Describe the raw data.
+```{r}
+cat("Number of rows:", nrow(homicide_data), "\n")
+cat("Number of columns:", ncol(homicide_data), "\n")
+
+glimpse(homicide_data)
+```
+
+
+3.2 Create city_state and summarize data by this new variable.
+```{r}
+homicide_data = homicide_data |>
+  janitor::clean_names() |>
+  mutate(city_state = paste(city, state, sep = ", "))
+
+city_state_summary = homicide_data |>
+  group_by(city_state) |>
+  summarise(
+    total_homicides = n(),
+    unsolved_homicides = sum(disposition %in% c("Closed without arrest", "Open/No arrest"))
+  )
+
+print(city_state_summary)
+```
+
+3.2 Filter data for Baltimore, MD and perform proportion test for Baltimore
+```{r}
+baltimore_data = 
+  city_state_summary |>
+  filter(city_state == "Baltimore, MD")
+
+baltimore_test = 
+  prop.test(
+    x = baltimore_data$unsolved_homicides,
+    n = baltimore_data$total_homicides
+    )
+
+baltimore_results = broom::tidy(baltimore_test)
+
+confidence_low = baltimore_results$conf.low
+confidence_high = baltimore_results$conf.high
+prop_estimate = baltimore_results$estimate
+
+cat("For the city of Baltimore, MD, the proportion of homicides that are unsolved, \
+    is estimated to be ",prop_estimate,"with confidence interval (", confidence_low, ",", confidence_high, ")")
+
+```
+
+3.3 Perform proportion tests for all cities
+```{r, warning=FALSE}
+city_state_results = 
+  city_state_summary |>
+  mutate(
+    prop_test = 
+      map2(unsolved_homicides, total_homicides, \(unsolved,total) prop.test(x = unsolved, n = total) |>
+             broom::tidy() |>
+             select(estimate, conf.low, conf.high)
+           )
+    ) |>
+  unnest(prop_test)
+
+city_state_results
+```
+
+3.4 Sort data by proportion of unsolved homicides and plot proportions with confidence intervals
+```{r fig, fig.width=6, fig.height=8, echo=FALSE}
+city_state_results =
+  city_state_results |>
+  arrange(desc(estimate))
+
+ggplot(city_state_results, aes(x = reorder(city_state, estimate), y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.3) +
+  coord_flip() +
+  labs(
+    title = "Proportion of Unsolved Homicides by City-State",
+    x = "City-State",
+    y = "Proportion of Unsolved Homicides"
+  ) +
+  theme_minimal() 
+
+```
+
