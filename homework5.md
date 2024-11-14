@@ -1,4 +1,4 @@
-Homework3
+Homework5
 ================
 Yunjia Liu
 2024-11-13
@@ -40,7 +40,7 @@ output_df = tibble(
   )
 ```
 
-Plot the probabilities.
+Plot the probabilities.  
 
 ``` r
 ggplot(output_df, aes(x = group_size, y = probability)) +
@@ -54,4 +54,98 @@ ggplot(output_df, aes(x = group_size, y = probability)) +
   theme_minimal()
 ```
 
-![](homework5_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](homework5_files/figure-gfm/unnamed-chunk-4-1.png)<!-- --> The plot
+showcases the counterintuitive nature of the problem: even with a
+seemingly small group (23 people), there is a high chance of at least
+one shared birthday. The curve’s steep growth between group sizes 10 and
+30 highlights how quickly the probability increases in that range.
+
+## Problem 2
+
+``` r
+n = 30
+sigma = 5
+alpha = 0.05
+mu_values = 0:6
+n_simulations <- 5000
+```
+
+Function for every mu values:  
+Generate data from N(mu, sigma) and perform a one-sample t-test. After
+that, we use broom::tidy() function to extract estimate and p-value
+
+``` r
+simulate_t_test <- function(n, mu, sigma, alpha) {
+  data <- rnorm(n, mean = mu, sd = sigma)
+
+  t_test_result = t.test(data, mu = 0)
+  
+  tidy_result = broom::tidy(t_test_result)
+  estimate = tidy_result$estimate
+  p_value = tidy_result$p.value
+  reject_null = p_value < alpha
+  
+  tibble(
+    u_hat = estimate, 
+    p_value = p_value,
+    reject_null = reject_null
+  )
+
+}
+```
+
+``` r
+sim_results_df = 
+  expand_grid(
+    sample_size = n,
+    mu = 1:6,
+    iter = 1:n_simulations,
+  ) |> 
+  mutate(
+    estimate_df = map(mu, ~simulate_t_test(n, .x, sigma,alpha))
+  ) |> 
+  unnest(estimate_df)
+```
+
+``` r
+summary_results <- sim_results_df %>%
+  group_by(mu) %>%
+  summarise(
+    power = mean(reject_null),                      # Proportion of null rejected
+    avg_u_hat = mean(u_hat),                        # Average estimate
+    avg_u_hat_rejected = mean(u_hat[reject_null])   # Average estimate when null is rejected
+  )
+```
+
+``` r
+# Plot: Power vs True Value of Mu
+ggplot(summary_results, aes(x = mu, y = power)) +
+  geom_line(color = "blue") +
+  geom_point(color = "blue") +
+  labs(
+    title = "Power vs True Value of Mu",
+    x = "True Value of Mu",
+    y = "Power (Proportion of Null Rejected)"
+  ) +
+  theme_minimal()
+```
+
+![](homework5_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+``` r
+# Plot: Average Estimate vs True Value of Mu
+ggplot(summary_results, aes(x = mu)) +
+  geom_line(aes(y = avg_u_hat, color = "All Estimates")) +
+  geom_line(aes(y = avg_u_hat_rejected, color = "Rejected Null")) +
+  geom_point(aes(y = avg_u_hat, color = "All Estimates")) +
+  geom_point(aes(y = avg_u_hat_rejected, color = "Rejected Null")) +
+  labs(
+    title = "Average Estimate of Mu vs True Value of Mu",
+    x = "True Value of Mu",
+    y = "Average Estimate of Mu",
+    color = "Legend"
+  ) +
+  theme_minimal()
+```
+
+![](homework5_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
