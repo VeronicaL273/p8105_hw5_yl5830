@@ -71,7 +71,7 @@ n_simulations <- 5000
 ```
 
 Function for every mu values: \
-Generate data from N(mu, sigma) and perform a one-sample t-test. After that, we use broom::tidy() function to extract estimate and p-value
+Generate data from normal distribution N(mu, sigma) and perform a one-sample t-test using alpha=0.05. After that, we use broom::tidy() function to extract estimate and p-value.
 ```{r}
 simulate_t_test <- function(n, mu, sigma, alpha) {
   data <- rnorm(n, mean = mu, sd = sigma)
@@ -92,7 +92,7 @@ simulate_t_test <- function(n, mu, sigma, alpha) {
 }
 ```
 
-
+Do iteration for t-test simulation.
 ```{r}
 sim_results_df = 
   expand_grid(
@@ -106,19 +106,23 @@ sim_results_df =
   unnest(estimate_df)
 ```
 
+Calculate the power (proportion of times the null was rejected), average estimate for all simulations (be it null rejected or not) and average estimate when null is rejected. \
+Since "reject_null" is a logical vector (TRUE if null was rejected) and mean() of a logical vector in R treats TRUE as 1 and FALSE as 0, mean(reject_null) gives the proportion of simulations where the null hypothesis was rejected. \
+u_hat[reject_null] subsets u_hat to include only estimates from simulations where the null hypothesis was rejected.
 ```{r}
-summary_results <- sim_results_df %>%
-  group_by(mu) %>%
+summary_results = sim_results_df |>
+  group_by(mu) |>
   summarise(
-    power = mean(reject_null),                      # Proportion of null rejected
-    avg_u_hat = mean(u_hat),                        # Average estimate
-    avg_u_hat_rejected = mean(u_hat[reject_null])   # Average estimate when null is rejected
+    power = mean(reject_null),                      
+    avg_u_hat = mean(u_hat),                        
+    avg_u_hat_rejected = mean(u_hat[reject_null])   
   )
 ```
 
 
+Plot: Power vs True Value of Mu
+#### For small effect sizes (e.g., mu = 0), power is close to zero, indicating the test has low ability to detect small effects. As mu increases, power approaches 1, showing that the test is more likely to reject the null hypothesis when the true effect is larger.
 ```{r}
-# Plot: Power vs True Value of Mu
 ggplot(summary_results, aes(x = mu, y = power)) +
   geom_line(color = "blue") +
   geom_point(color = "blue") +
@@ -130,9 +134,9 @@ ggplot(summary_results, aes(x = mu, y = power)) +
   theme_minimal()
 ```
 
-
+Plot: Average Estimate vs True Value of Mu
+#### The average estimate of mu-hat across all samples is approximately equal to the true value of mu. This shows the test is unbiased on average. The average mu_hat for rejected nulls is slightly larger than the true value of mu. This occurs because rejecting the null requires u_hat to be sufficiently far from 0, introducing selection bias.
 ```{r}
-# Plot: Average Estimate vs True Value of Mu
 ggplot(summary_results, aes(x = mu)) +
   geom_line(aes(y = avg_u_hat, color = "All Estimates")) +
   geom_line(aes(y = avg_u_hat_rejected, color = "Rejected Null")) +
@@ -144,7 +148,10 @@ ggplot(summary_results, aes(x = mu)) +
     y = "Average Estimate of Mu",
     color = "Legend"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(legend.position="bottom")
 
 ```
 
+Answer to the question:
+Across all samples, the sample average of mu_hat is approximately equal to the true mu, confirming that the estimator is unbiased. However, for samples where the null is rejected, the average mu_hat is not equal to the true mu. This is due to conditional bias: only samples with extreme values of mu_hat lead to rejection of the null hypothesis.
